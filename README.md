@@ -37,16 +37,14 @@ For more detailed examples, please refer to the `examples` folder in this reposi
 
 ## Example Applications
 
-1. **Clarifying Ambiguous Dataset Fields:** When merging or integrating a new or updated dataset (such as data from a
+1. **Clarifying Ambiguous Dataset Fields:** When merging or integrating a new or updated dataset (e.g. data from
    another year or source) with an existing dataset or workflow, uncertainty in how fields correspond to each
-   may exist because of a lack of headers or differing field names. field_match can help identify which fields in the
-   new
-   dataset correspond to expected fields.
+   may exist because of a lack of headers or differing field names. `field-match` can help identify which fields in the
+   new dataset correspond to expected fields.
 
 2. **Integrating External Dataset with Existing Model:** When feeding an external dataset into a pre-existing model,
-   it's crucial to ensure that the data aligns correctly with the model's expected input format. field_match can help
-   you
-   identify which fields in your new dataset correspond to the fields your model expects.
+   the new data must align correctly with the model's expected input format. `field-match` can help identify which fields
+   in the new dataset correspond to the fields the model expects.
 
 ## License
 
