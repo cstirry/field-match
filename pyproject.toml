@@ -1,0 +1,61 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "field-match"
+dynamic = ["version"]  # single source of truth: __version__ in src/field_match/__init__.py
+description = "Match columns between datasets by name and content similarity - align new, renamed, or headerless data to an existing schema."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+authors = [{ name = "Christine Stirrat" }]
+keywords = ["schema-matching", "data-cleaning", "pandas", "csv", "columns", "fuzzy-matching"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Typing :: Typed",
+]
+dependencies = [
+    "pandas>=2.0",  # to_datetime(format="mixed") needs 2.0+
+    "numpy>=1.23",
+]
+
+[project.optional-dependencies]
+optimal = ["scipy>=1.9"]          # Hungarian algorithm for one-to-one assignment
+excel = ["openpyxl>=3.1"]         # pd.read_excel support
+parquet = ["pyarrow>=10.0"]       # pd.read_parquet support
+spss = ["pyreadstat>=1.2"]        # pd.read_spss support
+io = ["field-match[excel,parquet,spss]"]  # everything read_table() can open
+dev = ["pytest>=7", "ruff>=0.4", "scipy>=1.9", "openpyxl>=3.1", "pyarrow>=10.0", "pyreadstat>=1.2"]
+
+[project.urls]
+Homepage = "https://github.com/cstirry/field-match"
+Issues = "https://github.com/cstirry/field-match/issues"
+Changelog = "https://github.com/cstirry/field-match/blob/main/CHANGELOG.md"
+
+[tool.hatch.version]
+path = "src/field_match/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/field_match"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+extend-exclude = ["examples"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B", "SIM"]
