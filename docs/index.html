@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>field-match — column crosswalk tool</title>
+<meta name="description" content="Match columns between two CSV or Excel files by name and content similarity. Runs entirely in your browser — files never leave your device.">
+<!-- Original mark drawn for this project: two crosswalk chips joined by
+     the app's curved connector, same palette and bezier as the UI. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='3' y='7' width='27' height='18' rx='6' fill='%230E7C66'/%3E%3Crect x='34' y='39' width='27' height='18' rx='6' fill='%2316232E'/%3E%3Cpath d='M30 16 C46 16 18 48 34 48' fill='none' stroke='%23C77D1F' stroke-width='5.5' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F6F8F9;
+  --ink:#16232E;
+  --ink-soft:#4E6070;
+  --line:#D7DEE3;
+  --card:#FFFFFF;
+  --green:#0E7C66;      /* high confidence */
+  --green-soft:#E2F1ED;
+  --amber:#C77D1F;      /* medium confidence */
+  --amber-soft:#F7ECDC;
+  --grey:#8B99A5;
+  --red:#A33A2C;        /* no match in the other file */
+  --red-soft:#F8E9E6;
+  --focus:#0E7C66;
+  --radius:10px;
+  --display:'Spectral',Georgia,serif;
+  --body:'Public Sans',sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55}
+a{color:var(--green)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:4px}
+
+.wrap{max-width:1060px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid var(--line);background:var(--card)}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:22px 0;flex-wrap:wrap}
+.brand{font-family:var(--display);font-weight:800;font-size:1.35rem;letter-spacing:-.02em}
+.brand .tick{color:var(--green)}
+.tagline{color:var(--ink-soft);font-size:.9rem}
+.privacy{font-family:var(--mono);font-size:.75rem;color:var(--green);background:var(--green-soft);padding:4px 10px;border-radius:999px;white-space:nowrap}
+
+.hero{padding:48px 0 14px;text-align:center}
+.hero h1{font-family:var(--display);font-weight:600;font-size:clamp(1.7rem,4.2vw,2.5rem);letter-spacing:-.01em;line-height:1.2;max-width:24ch;margin:0 auto}
+.hero h1 em{font-style:italic;color:var(--green)}
+.hero p{margin:14px auto 0;color:var(--ink-soft);max-width:58ch}
+
+.dropzones{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:28px 0 8px}
+@media(max-width:720px){.dropzones{grid-template-columns:1fr}}
+.zone{background:var(--card);border:1.5px dashed var(--line);border-radius:var(--radius);padding:26px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.zone:hover,.zone.drag{border-color:var(--green);background:var(--green-soft)}
+.zone .role{font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft)}
+.zone h2{font-family:var(--display);font-weight:600;font-size:1.05rem;margin:6px 0 4px}
+.zone .hint{font-size:.85rem;color:var(--ink-soft)}
+.zone .loaded{display:none;margin-top:8px;font-family:var(--mono);font-size:.82rem;color:var(--green);word-break:break-all}
+.zone.has-file{border-style:solid;border-color:var(--green)}
+.zone.has-file .loaded{display:block}
+.zone input{display:none}
+.sheet-select{margin-top:8px;font-family:var(--mono);font-size:.78rem;padding:5px 8px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink)}
+
+.controls{display:flex;align-items:center;gap:22px;flex-wrap:wrap;padding:14px 0 6px}
+.control{display:flex;flex-direction:column;align-items:flex-start;gap:3px;font-size:.85rem;color:var(--ink-soft)}
+.control-row{display:flex;align-items:center;gap:10px}
+.control-hint{font-size:.72rem;color:var(--grey)}
+.control output{font-family:var(--mono);color:var(--ink);min-width:3ch}
+input[type=range]{accent-color:var(--green);width:150px}
+button.primary{font-family:var(--body);font-weight:600;font-size:1rem;background:var(--ink);color:#fff;border:0;border-radius:var(--radius);padding:12px 26px;cursor:pointer}
+button.primary:hover:not(:disabled){background:var(--green)}
+button.primary:disabled{background:var(--grey);cursor:not-allowed}
+button.ghost{font-family:var(--body);font-weight:600;font-size:.85rem;background:none;border:1.5px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer;color:var(--ink)}
+button.ghost:hover{border-color:var(--green);color:var(--green)}
+
+.status{font-family:var(--mono);font-size:.8rem;color:var(--ink-soft);padding:8px 0 24px;min-height:2em}
+.status.err{color:#A33A2C}
+
+/* report card */
+#results{display:none;padding:8px 0 30px}
+.report-title{font-family:var(--display);font-weight:800;font-size:1.4rem;letter-spacing:-.02em;margin-bottom:8px}
+.report-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:26px}
+.rep-row{display:flex;align-items:baseline;gap:12px;padding:5px 0}
+.rep-row+.rep-row{border-top:1px solid var(--paper)}
+.rep-n{font-family:var(--mono);font-size:1.05rem;font-weight:500;min-width:3ch;text-align:right}
+.rep-cat{font-family:var(--display);font-weight:600;min-width:5.5em}
+.rep-blurb{color:var(--ink-soft);font-size:.85rem}
+.rep-row.verified .rep-n{color:var(--green)}
+.rep-row.renamed .rep-n,.rep-row.suspect .rep-n{color:var(--amber)}
+.rep-row.dropped .rep-n,.rep-row.added .rep-n{color:#A33A2C}
+.rep-notes{margin:10px 0 0;padding-left:18px;color:var(--ink-soft);font-size:.82rem}
+.rep-notes:empty{display:none}
+
+/* crosswalk */
+.results-head{display:flex;justify-content:space-between;align-items:end;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+.results-head h2{font-family:var(--display);font-weight:800;font-size:1.4rem;letter-spacing:-.02em}
+.legend{display:flex;gap:14px;font-size:.78rem;color:var(--ink-soft);flex-wrap:wrap}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:baseline}
+.dashline{display:inline-block;width:16px;height:0;border-top:2px dashed var(--amber);margin-right:5px;vertical-align:middle}
+.crosswalk-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 14px;overflow-x:auto}
+.crosswalk{position:relative;display:grid;grid-template-columns:1fr minmax(90px,140px) 1fr;min-width:560px}
+.cw-col{display:flex;flex-direction:column;gap:10px}
+.cw-col-label{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);margin-bottom:2px}
+.chip{border:1.5px solid var(--line);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:.83rem;background:var(--paper);word-break:break-all}
+.chip.hi{border-color:var(--green);background:var(--green-soft)}
+.chip.mid{border-color:var(--amber);background:var(--amber-soft)}
+.chip.un{border-color:var(--red);background:var(--red-soft)}
+.chip .fam{float:right;font-size:.68rem;color:var(--ink-soft);padding-left:8px}
+.cw-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.score-tag{font-family:var(--mono);font-size:.7rem;fill:var(--ink-soft)}
+
+/* table + downloads */
+.detail{margin-top:26px}
+.detail h3{font-family:var(--display);font-weight:600;font-size:1.05rem;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;font-size:.85rem}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line)}
+th{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft);background:var(--paper)}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.downloads{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap}
+
+footer{border-top:1px solid var(--line);padding:20px 0 34px;color:var(--ink-soft);font-size:.82rem}
+footer .wrap{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap masthead">
+    <div>
+      <div class="brand">field<span class="tick">-</span>match</div>
+      <div class="tagline">column crosswalk for datasets</div>
+    </div>
+    <div class="privacy">runs in your browser — files never uploaded</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Compare two datasets, <em>column by column</em>.</h1>
+    <p>Compare a reference dataset and a second dataset, e.g. last year's annual release versus this year's. field-match checks the column names <strong>and</strong> the values inside them, then reports what is verified, renamed, suspect, dropped, or added.</p>
+  </section>
+
+  <section class="dropzones">
+    <div class="zone" id="zone1" tabindex="0" role="button" aria-label="Choose the reference dataset">
+      <div class="role">Reference</div>
+      <h2>Reference dataset</h2>
+      <div class="hint">CSV, Excel, Parquet, JSON, Stata, or fixed-width — click or drag here</div>
+      <div class="loaded" id="loaded1"></div>
+      <select class="sheet-select" id="sheet1" style="display:none"></select>
+      <input type="file" id="file1" accept=".csv,.tsv,.xlsx,.xls,.parquet,.json,.dta,.fwf">
+    </div>
+    <div class="zone" id="zone2" tabindex="0" role="button" aria-label="Choose the second dataset">
+      <div class="role">Matched to the reference</div>
+      <h2>Second dataset</h2>
+      <div class="hint">CSV, Excel, Parquet, JSON, Stata, or fixed-width — click or drag here</div>
+      <div class="loaded" id="loaded2"></div>
+      <select class="sheet-select" id="sheet2" style="display:none"></select>
+      <input type="file" id="file2" accept=".csv,.tsv,.xlsx,.xls,.parquet,.json,.dta,.fwf">
+    </div>
+  </section>
+
+  <section class="controls">
+    <button class="primary" id="run" disabled>Match columns</button>
+    <label class="control">
+      <span class="control-row">Match threshold
+        <input type="range" id="threshold" min="0" max="100" value="50">
+        <output id="thresholdOut">0.50</output>
+      </span>
+      <span class="control-hint">higher = fewer, more confident matches</span>
+    </label>
+    <label class="control">
+      <span class="control-row">Weight on names vs. contents
+        <input type="range" id="nameWeight" min="0" max="100" value="40">
+        <output id="nameWeightOut">0.40</output>
+      </span>
+      <span class="control-hint">left = trust the values, right = trust the column names</span>
+    </label>
+  </section>
+  <div class="status" id="status">Loading Python runtime…</div>
+
+  <section id="results" aria-live="polite">
+    <h2 class="report-title">Report</h2>
+    <div class="report-card">
+      <div class="rep-rows" id="repRows"></div>
+      <ul class="rep-notes" id="repNotes"></ul>
+    </div>
+
+    <div class="results-head">
+      <h2>Crosswalk</h2>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--green)"></span>verified</span>
+        <span><span class="dot" style="background:var(--amber)"></span>review (renamed, suspect)</span>
+        <span><span class="dot" style="background:var(--red)"></span>unmatched (dropped, added)</span>
+        <span><span class="dashline"></span>suspect</span>
+      </div>
+    </div>
+    <div class="crosswalk-card">
+      <div class="crosswalk" id="crosswalk"></div>
+    </div>
+
+    <div class="detail">
+      <h3>All candidates considered</h3>
+      <div style="overflow-x:auto">
+      <table id="reportTable">
+        <thead><tr>
+          <th>Reference column</th><th>Candidate in second dataset</th><th>Type</th>
+          <th>Name score</th><th>Content score</th><th>Combined</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="downloads">
+      <button class="ghost" id="dlMapping">Download mapping (CSV)</button>
+      <button class="ghost" id="dlSnippet">Download Python rename snippet</button>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Open source — <a href="https://github.com/cstirry/field-match">github.com/cstirry/field-match</a> · <code>pip install field-match</code></span>
+    <span>Everything runs locally via WebAssembly. Reload the page to clear all data.</span>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const status = (msg, err=false) => { const s=$("status"); s.textContent=msg; s.classList.toggle("err",err); };
+
+let pyodide=null, files={1:null,2:null}, lastResult=null;
+
+// ---------- file pickup ----------
+function wireZone(n){
+  const zone=$("zone"+n), input=$("file"+n), sheetSel=$("sheet"+n);
+  const take=async f=>{ if(!f) return;
+    files[n]={name:f.name, file:f, path:null, sheet:0};
+    zone.classList.add("has-file");
+    $("loaded"+n).textContent="✓ "+f.name;
+    sheetSel.style.display="none"; sheetSel.innerHTML="";
+    maybeEnable();
+    await maybeOfferSheets(n);
+  };
+  zone.addEventListener("click",()=>input.click());
+  zone.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();input.click();}});
+  input.addEventListener("change",()=>take(input.files[0]));
+  zone.addEventListener("dragover",e=>{e.preventDefault();zone.classList.add("drag");});
+  zone.addEventListener("dragleave",()=>zone.classList.remove("drag"));
+  zone.addEventListener("drop",e=>{e.preventDefault();zone.classList.remove("drag");take(e.dataTransfer.files[0]);});
+  sheetSel.addEventListener("click", e=>e.stopPropagation());
+  sheetSel.addEventListener("change", ()=>{ if(files[n]) files[n].sheet = sheetSel.value; });
+}
+wireZone(1); wireZone(2);
+function maybeEnable(){ $("run").disabled = !(pyodide && files[1] && files[2]); }
+
+// If pyodide is ready and the chosen file is Excel with multiple sheets,
+// write it into the virtual FS now and show a picker.
+async function maybeOfferSheets(n){
+  const f=files[n];
+  if(!pyodide || !f || !/\.xlsx?$/i.test(f.name)) return;
+  const path=await writeToFS(n);
+  const sheets=pyodide.pyimport("field_match").list_sheets(path);
+  const names=sheets.toJs();
+  if(names.length>1){
+    const sel=$("sheet"+n);
+    sel.innerHTML=names.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("");
+    sel.style.display="block";
+    f.sheet=names[0];
+  }
+}
+// Called again once pyodide finishes loading, for files chosen before that.
+function recheckSheetsForLoadedFiles(){ [1,2].forEach(n=>{ if(files[n]) maybeOfferSheets(n); }); }
+
+// ---------- sliders ----------
+const fmt=v=>(v/100).toFixed(2);
+$("threshold").addEventListener("input",e=>$("thresholdOut").textContent=fmt(e.target.value));
+$("nameWeight").addEventListener("input",e=>$("nameWeightOut").textContent=fmt(e.target.value));
+
+// ---------- pyodide boot ----------
+async function boot(){
+  try{
+    pyodide = await loadPyodide();
+    status("Loading pandas (first visit takes ~20s, cached after)…");
+    // pandas/fastparquet ship with Pyodide; openpyxl is pure Python and
+    // comes from PyPI via micropip (Pyodide has no pyarrow - pandas falls
+    // back to fastparquet for Parquet files).
+    await pyodide.loadPackage(["pandas","scipy","fastparquet","micropip"]);
+    const micropip = pyodide.pyimport("micropip");
+    // Fetch the wheel with revalidation (cache:"no-cache") so browsers
+    // don't keep serving a stale copy after the site updates, then
+    // install it from the virtual filesystem.
+    const whl = "field_match-0.2.0-py3-none-any.whl";
+    const buf = new Uint8Array(await (await fetch("./"+whl, {cache:"no-cache"})).arrayBuffer());
+    pyodide.FS.writeFile("/"+whl, buf);
+    await micropip.install(["openpyxl", "emfs:/"+whl]);
+    status("Ready. Add two datasets above.");
+    maybeEnable();
+    recheckSheetsForLoadedFiles();
+  }catch(e){ status("Could not load the Python runtime: "+e.message, true); }
+}
+boot();
+
+// ---------- matching ----------
+async function writeToFS(n){
+  const f=files[n];
+  if(f.path) return f.path;
+  const buf=new Uint8Array(await f.file.arrayBuffer());
+  const path=`/f${n}_${f.name.replace(/[^A-Za-z0-9._-]/g,"_")}`;
+  pyodide.FS.writeFile(path, buf);
+  f.path=path;
+  return path;
+}
+
+$("run").addEventListener("click", async ()=>{
+  $("run").disabled=true;
+  status("Matching…");
+  try{
+    const p1=await writeToFS(1), p2=await writeToFS(2);
+    pyodide.globals.set("P1",p1); pyodide.globals.set("P2",p2);
+    pyodide.globals.set("SHEET1",files[1].sheet); pyodide.globals.set("SHEET2",files[2].sheet);
+    pyodide.globals.set("THRESHOLD",Number($("threshold").value)/100);
+    pyodide.globals.set("NAME_WEIGHT",Number($("nameWeight").value)/100);
+    const out = await pyodide.runPythonAsync(`
+import json
+from dataclasses import asdict
+from field_match import compare, read_table
+
+df1, df2 = read_table(P1, sheet_name=SHEET1), read_table(P2, sheet_name=SHEET2)
+report = compare(df1, df2, match_threshold=THRESHOLD, name_weight=NAME_WEIGHT)
+
+# Dashed warning lines: suspect namesakes that were NOT matched to each
+# other (weak same-name matches already have a solid line).
+matched_same = {str(m.source).lower() for m in report.matches
+                if str(m.source).strip().lower() == str(m.target).strip().lower()}
+new_by_lower = {str(c).lower(): str(c) for c in report.new_columns}
+dashes = [
+    {"source": s.name, "target": new_by_lower[s.name.lower()], "score": s.score}
+    for s in report.suspect
+    if s.name.lower() not in matched_same and s.name.lower() in new_by_lower
+]
+
+top3 = report.scores.groupby("source", sort=False).head(3)
+json.dumps({
+    "cols1": report.reference_columns,
+    "cols2": report.new_columns,
+    "matches": [asdict(m) for m in report.matches],
+    "counts": {"verified": len(report.verified), "renamed": len(report.renamed),
+               "suspect": len(report.suspect), "dropped": len(report.dropped),
+               "added": len(report.added)},
+    "notes": report.notes,
+    "verified_threshold": report.verified_threshold,
+    "namesakes": dashes,
+    "report": top3.to_dict(orient="records"),
+    "snippet": report.rename_snippet(),
+    "rows": [len(df1), len(df2)],
+})`);
+    lastResult=JSON.parse(out);
+    render(lastResult);
+    status(`Done. Read ${lastResult.rows[0]} + ${lastResult.rows[1]} rows.`);
+  }catch(e){
+    status("Something went wrong reading or matching the files: "+(e.message||e), true);
+    console.error(e);
+  }finally{ $("run").disabled=false; }
+});
+
+// ---------- rendering ----------
+const BLURBS={
+  verified:"field name and contents both match",
+  renamed:"contents match, but under a different field name — review",
+  suspect:"field name matches, but contents do not — review",
+  dropped:"reference column with no match in the second dataset",
+  added:"second-dataset column with no match in the reference",
+};
+
+function renderReportCard(r){
+  const rows=$("repRows"); rows.innerHTML="";
+  for(const cat of Object.keys(BLURBS)){
+    const d=document.createElement("div");
+    d.className="rep-row "+cat;
+    d.innerHTML=`<span class="rep-n">${r.counts[cat]}</span>`+
+                `<span class="rep-cat">${cat}</span>`+
+                `<span class="rep-blurb">${esc(BLURBS[cat])}</span>`;
+    rows.appendChild(d);
+  }
+  const notes=$("repNotes"); notes.innerHTML="";
+  // The package's notes say "new data"; the app says "second dataset".
+  const toAppWords=t=>t
+    .replace("the reference and new data has","both datasets have")
+    .replace("the new data has","the second dataset has")
+    .replace("new data column(s)","second dataset column(s)");
+  (r.notes||[]).forEach(n=>{
+    const li=document.createElement("li");
+    li.textContent=toAppWords(n);
+    notes.appendChild(li);
+  });
+}
+
+function render(r){
+  $("results").style.display="block";
+  renderReportCard(r);
+  const cw=$("crosswalk"); cw.innerHTML="";
+  const matchByTarget={}, matchBySource={};
+  r.matches.forEach(m=>{matchByTarget[m.target]=m; matchBySource[m.source]=m;});
+
+  const colL=document.createElement("div"); colL.className="cw-col";
+  colL.innerHTML='<div class="cw-col-label">Reference columns</div>';
+  const gap=document.createElement("div");
+  const colR=document.createElement("div"); colR.className="cw-col";
+  colR.innerHTML='<div class="cw-col-label">Second dataset columns</div>';
+
+  const chipEls={L:{},R:{}};
+  // green = verified (same name, contents agree); amber = renamed or drifted.
+  const sameName=m=>String(m.source).trim().toLowerCase()===String(m.target).trim().toLowerCase();
+  const cls=m=>(sameName(m)&&m.score>=r.verified_threshold)?"hi":"mid";
+  // Namesake suspects (same name in both files, but never matched to each
+  // other) have no entry in r.matches - without this, they'd fall through
+  // to "un" (red/unmatched) even though the column DOES exist on both
+  // sides and is already explained by report.suspect, just under review.
+  const namesakeL=new Set((r.namesakes||[]).map(p=>p.source));
+  const namesakeR=new Set((r.namesakes||[]).map(p=>p.target));
+  // Reference columns stay in their actual file order. The new file's
+  // columns line up beside their match (so connectors never cross), with
+  // its unmatched columns at the bottom.
+  const orderL=[...r.cols1];
+  const orderR=[...r.cols1.filter(c=>matchBySource[c]).map(c=>matchBySource[c].target),
+                ...r.cols2.filter(c=>!matchByTarget[c])];
+  orderL.forEach(c=>{
+    const m=matchBySource[c];
+    const d=document.createElement("div");
+    d.className="chip "+(m?cls(m):(namesakeL.has(c)?"mid":"un"));
+    d.textContent=c;
+    if(m){const f=document.createElement("span");f.className="fam";f.textContent=m.family;d.appendChild(f);}
+    colL.appendChild(d); chipEls.L[c]=d;
+  });
+  orderR.forEach(c=>{
+    const m=matchByTarget[c];
+    const d=document.createElement("div");
+    d.className="chip "+(m?cls(m):(namesakeR.has(c)?"mid":"un"));
+    d.textContent=c;
+    colR.appendChild(d); chipEls.R[c]=d;
+  });
+  cw.append(colL,gap,colR);
+
+  // connectors
+  requestAnimationFrame(()=>{
+    const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+    svg.setAttribute("class","cw-svg");
+    const box=cw.getBoundingClientRect();
+    r.matches.forEach(m=>{
+      const a=chipEls.L[m.source], b=chipEls.R[m.target];
+      if(!a||!b) return;
+      const ra=a.getBoundingClientRect(), rb=b.getBoundingClientRect();
+      const x1=ra.right-box.left, y1=ra.top-box.top+ra.height/2;
+      const x2=rb.left-box.left,  y2=rb.top-box.top+rb.height/2;
+      const midx=(x1+x2)/2;
+      const path=document.createElementNS(svg.namespaceURI,"path");
+      path.setAttribute("d",`M${x1},${y1} C${midx},${y1} ${midx},${y2} ${x2},${y2}`);
+      path.setAttribute("fill","none");
+      // green solid = verified; amber solid = renamed; amber dashed =
+      // suspect (matched its namesake, but weakly).
+      const verified=sameName(m)&&m.score>=r.verified_threshold;
+      path.setAttribute("stroke",verified?"var(--green)":"var(--amber)");
+      if(sameName(m)&&!verified) path.setAttribute("stroke-dasharray","6 5");
+      path.setAttribute("stroke-width",1.5+m.score*2.5);
+      path.setAttribute("stroke-linecap","round");
+      path.setAttribute("opacity","0.85");
+      svg.appendChild(path);
+      const t=document.createElementNS(svg.namespaceURI,"text");
+      t.setAttribute("x",midx); t.setAttribute("y",(y1+y2)/2-5);
+      t.setAttribute("text-anchor","middle"); t.setAttribute("class","score-tag");
+      t.textContent=m.score.toFixed(2);
+      svg.appendChild(t);
+    });
+    // Dashed warning lines: same column name in both files, but NOT
+    // matched to each other. Label shows the pair's score, or "type ≠"
+    // when the contents are different types and were never compared.
+    (r.namesakes||[]).forEach(p=>{
+      const a=chipEls.L[p.source], b=chipEls.R[p.target];
+      if(!a||!b) return;
+      const ra=a.getBoundingClientRect(), rb=b.getBoundingClientRect();
+      const x1=ra.right-box.left, y1=ra.top-box.top+ra.height/2;
+      const x2=rb.left-box.left,  y2=rb.top-box.top+rb.height/2;
+      const midx=(x1+x2)/2;
+      const path=document.createElementNS(svg.namespaceURI,"path");
+      path.setAttribute("d",`M${x1},${y1} C${midx},${y1} ${midx},${y2} ${x2},${y2}`);
+      path.setAttribute("fill","none");
+      path.setAttribute("stroke","var(--amber)");
+      path.setAttribute("stroke-width","1.5");
+      path.setAttribute("stroke-dasharray","6 5");
+      path.setAttribute("stroke-linecap","round");
+      path.setAttribute("opacity","0.7");
+      svg.appendChild(path);
+      const t=document.createElementNS(svg.namespaceURI,"text");
+      t.setAttribute("x",midx); t.setAttribute("y",(y1+y2)/2+14);
+      t.setAttribute("text-anchor","middle"); t.setAttribute("class","score-tag");
+      t.style.fill="var(--amber)";
+      t.textContent="same name: "+(p.score!=null?p.score.toFixed(2):"type ≠");
+      svg.appendChild(t);
+    });
+    cw.appendChild(svg);
+  });
+
+  // detail table
+  const tb=$("reportTable").querySelector("tbody"); tb.innerHTML="";
+  r.report.forEach(row=>{
+    const tr=document.createElement("tr");
+    const chosen=matchBySource[row.source]&&matchBySource[row.source].target===row.target;
+    tr.innerHTML=`<td>${esc(row.source)}${chosen?" ✓":""}</td><td>${esc(row.target)}</td><td>${row.family}</td>
+      <td class="num">${row.name_score.toFixed(2)}</td><td class="num">${row.content_score.toFixed(2)}</td>
+      <td class="num"><strong>${row.score.toFixed(2)}</strong></td>`;
+    if(chosen) tr.style.background="var(--green-soft)";
+    tb.appendChild(tr);
+  });
+}
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+// ---------- downloads ----------
+function download(name, text, type){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([text],{type}));
+  a.download=name; a.click(); URL.revokeObjectURL(a.href);
+}
+$("dlMapping").addEventListener("click",()=>{
+  if(!lastResult) return;
+  const rows=[["second_dataset_column","reference_column","score","name_score","content_score","type"]];
+  // List rows in the new file's own column order, not by score.
+  const position=new Map(lastResult.cols2.map((c,i)=>[c,i]));
+  [...lastResult.matches]
+    .sort((a,b)=>position.get(a.target)-position.get(b.target))
+    .forEach(m=>rows.push([m.target,m.source,m.score,m.name_score,m.content_score,m.family]));
+  download("field_match_mapping.csv",
+    rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n"),
+    "text/csv");
+});
+$("dlSnippet").addEventListener("click",()=>{
+  if(!lastResult) return;
+  download("rename_columns.py", lastResult.snippet+"\n", "text/x-python");
+});
+</script>
+</body>
+</html>
