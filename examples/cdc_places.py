@@ -1,8 +1,8 @@
-"""Crosswalk CDC's 500 Cities data to its successor, PLACES, 2019 vs, 2020.
+"""Crosswalk CDC's 500 Cities data to its successor, PLACES, 2019 vs. 2020.
 
 Run it with:
 
-    python examples/cdc_place.py
+    python examples/cdc_places.py
 
 The two CSVs are downloaded once into examples/data/
 
@@ -24,7 +24,7 @@ DATA_DIR = Path(__file__).resolve().parent / "data"
 ID_500_CITIES_2019 = "6vp6-wxuq"  # 500 Cities: Local Data for Better Health, 2019 release
 ID_PLACES_2020 = "q8xq-ygsk"  # PLACES: Local Data for Better Health, Place Data 2020 release
 
-STATE = "MD"
+STATE = "NC"  # a state with several 500 Cities entries, for a meatier comparison
 
 
 def fetch(filename: str, dataset_id: str, where: str) -> Path:

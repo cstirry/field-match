@@ -1,8 +1,8 @@
-"""Crosswalk two releases of the IMLS Public Libraries Survey (PLS), 1992 vs 2022.
+"""Crosswalk two releases of the IMLS Public Libraries Survey (PLS), 1992 vs. 2022.
 
 Run it with:
 
-    python examples/imls_pls_crosswalk.py
+    python examples/imls_pls.py
 
 The two zips/CSVs are downloaded once into examples/data/
 

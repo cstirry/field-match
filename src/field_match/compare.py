@@ -428,6 +428,7 @@ def _find_suspects(
 def compare(
     reference,
     new_data,
+    *,
     match_threshold: float = 0.5,
     verified_threshold: float = 0.75,
     name_weight: float = 0.4,
@@ -576,7 +577,7 @@ def compare(
     )
 
 
-def generate_column_rename(data1, data2, match_threshold: float = 0.5, **kwargs) -> str:
+def generate_column_rename(data1, data2, *, match_threshold: float = 0.5, **kwargs) -> str:
     """Generate a reviewable rename_dict for ``data2``'s columns.
 
     Convenience for ``compare(data1, data2).rename_snippet()``: only
@@ -590,6 +591,7 @@ def generate_column_rename(data1, data2, match_threshold: float = 0.5, **kwargs)
 def align_to_model(
     model,
     data: pd.DataFrame,
+    *,
     match_threshold: float = 0.5,
     auto_apply: bool = True,
 ) -> ComparisonReport | pd.DataFrame:

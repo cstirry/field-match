@@ -13,7 +13,7 @@ Full rewrite of the 0.1.0 prototype. Breaking changes throughout.
   - `report.rename_snippet()` for a reviewable, pasteable rename dict
   - `report.to_dict()` for logging and pipeline alerts
   - `report.notes` for warnings (headerless data, duplicate column names, empty columns)
-- Two thresholds control the report: `match_threshold` (default 0.5, minimum score to propose a match) and `verified_threshold` (default 0.75, minimum for a same-name match to count as verified rather than suspect).
+- Two thresholds control the report: `match_threshold` (default 0.5, minimum score to propose a match) and `verified_threshold` (default 0.75, minimum for a same-name match to count as verified rather than suspect). All tuning parameters are keyword-only.
 - `reference` accepts a DataFrame, a list of expected column names, a fitted scikit-learn model, or a file path; `new_data` accepts a DataFrame or a file path.
 - `align_to_model(model, df)` fits a DataFrame to a model's `feature_names_in_`, raising a clear error on any unmatched column (or returning the report to review first with `auto_apply=False`).
 - `read_table(path)` / `list_sheets(path)` read CSV, TSV, Excel, Parquet, JSON, Stata, SPSS, and fixed-width files through one function; non-UTF-8 text files (common in older government data) fall back to Latin-1 automatically.

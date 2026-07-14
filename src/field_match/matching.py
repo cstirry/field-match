@@ -93,6 +93,7 @@ _CONTENT_FUNCS = {
 def similarity_scores(
     data1: pd.DataFrame,
     data2: pd.DataFrame,
+    *,
     name_weight: float = 0.4,
     sample_size: int = 2000,
     random_state: int = 0,
@@ -388,6 +389,7 @@ def _match_with_scores(
 def match_fields(
     data1: pd.DataFrame,
     data2: pd.DataFrame,
+    *,
     match_threshold: float = 0.5,
     name_weight: float = 0.4,
     sample_size: int = 2000,
@@ -412,16 +414,14 @@ def match_fields(
         best one-to-one pairing via the Hungarian algorithm), ``"greedy"``
         (faster one-to-one approximation, no scipy required), or
         ``"all"`` (every candidate pair scoring at or above
-        ``match_threshold``, no picking at all). See
-        :func:`_resolve_assignment`.
+        ``match_threshold``, no picking at all).
     exact_first:
         If True (default), columns whose names match exactly (ignoring
         case) and whose contents are the same type family are paired
-        immediately and skip the all-pairs comparison - see
-        :func:`_presolve_exact`. Much faster when the two files mostly
-        share a schema. Ignored for ``assignment="all"``, which by
-        definition reports every candidate pair. Set False to force the
-        full comparison for every column.
+        immediately and skip the all-pairs comparison. Much faster when
+        the two files mostly share a schema. Ignored for
+        ``assignment="all"``, which by definition reports every candidate
+        pair. Set False to force the full comparison for every column.
 
     Returns matches with ``score >= match_threshold``, sorted by
     descending score.

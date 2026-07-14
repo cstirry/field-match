@@ -27,7 +27,9 @@ print(report)
 
 ## Why
 
-`field-match` compares a reference dataset against a new one, checking both column names and contents, to catch drift before it breaks something downstream. Names, types, and values can all shift between data releases. `field-match` sorts out exactly which columns need review and which are safely verified, so there's less to check manually.
+Names, types, and values can all shift between data releases, quietly breaking anything downstream that expects a stable schema. `field-match` compares a new dataset against a reference on both column names *and* contents, then sorts every column into verified, renamed, suspect, dropped, or added, so there's less to check by hand.
+
+What sets it apart from other comparison tools is that it doesn't assume columns line up by name. It scores every pair on name similarity *and* content similarity, so a column can still be matched after it's been renamed. That's especially useful for the annual data releases common with public-interest datasets.
 
 ## How columns are matched
 
@@ -119,7 +121,7 @@ Pass `auto_apply=False` to get the `ComparisonReport` to review instead.
 
 ### Tuning
 
-All parameters are optional.
+All tuning parameters are optional and keyword-only (pass them by name).
 
 | Parameter | Range | Default | Meaning |
 |---|---|---|---|
@@ -139,17 +141,21 @@ All parameters are optional.
 
 The five scoring functions are importable too: `name_similarity`, `numeric_similarity`, `datetime_similarity`, `boolean_similarity`, `text_similarity`. Each takes two Series and returns a score in [0, 1].
 
+## Limitations
+
+Content matching keys on the *shape* of a column's values, not their meaning. Numeric and datetime columns are compared by distribution (a KS statistic, raw and median-centered), so two unrelated columns with similar distributions, say any two roughly-normal columns on comparable scales, can score high on content alone. One-to-one assignment and `name_weight` keep this in check in practice, but a match that rests on contents while scoring ~0 on the name is exactly the kind to eyeball. That is what the `renamed` and `suspect` piles, and `report.candidates(column)`, are for: review before you `apply()`.
+
 ## Examples with real data
 
 Each script in [examples/](examples) downloads a real government data release and crosswalks it:
 
-- [svi_crosswalk.py](examples/cdc-atsdr_svi.py) - Compares data from CDC/ATSDR Social Vulnerability Index, 2010 vs 2022.
-- [cdc_places_crosswalk.py](examples/cdc_places.py) - Compares data from the CDC Places 500 Cities/PLACES, 2019 vs 2020.
-- [imls_pls_crosswalk.py](examples/imls_pls.py) - Compares data from the Public Libraries Survey, 1992 vs 2022.
+- [cdc_atsdr_svi.py](examples/cdc_atsdr_svi.py) - CDC/ATSDR Social Vulnerability Index, 2010 vs. 2022. Catches the `ST`/`STATE` reused-name trap, where both names exist in both files but swapped meaning.
+- [cdc_places.py](examples/cdc_places.py) - CDC 500 Cities / PLACES, 2019 vs. 2020. Identifies column renmaing like `cityname` → `locationname` and `populationcount` → `totalpopulation` based on content.
+- [imls_pls.py](examples/imls_pls.py) - IMLS Public Libraries Survey, 1992 vs. 2022.
 
 ```bash
 pip install "field-match[optimal]"
-python examples/cdc-atsdr_svi.py
+python examples/cdc_atsdr_svi.py
 python examples/cdc_places.py
 python examples/imls_pls.py
 ```

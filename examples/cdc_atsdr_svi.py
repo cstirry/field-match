@@ -2,7 +2,7 @@
 
 Run it with:
 
-    python examples/cdc-atsdr_svi.py
+    python examples/cdc_atsdr_svi.py
 
 The two CSVs are downloaded once into examples/data/
 
@@ -45,21 +45,24 @@ def main() -> None:
     report = compare(svi_2010, svi_2022)
     print(report)
 
-    # The suspect category is where reused names surface. In 2010, ST
-    # held text state abbreviations and STATE held numeric codes; by
-    # 2022 the numeric code is called ST. The contents give it away.
-    print("\nsuspect, in detail:")
+    # ------------------------------------------------------------------
+    # 2. Read the suspect reasons. This is where reused names surface:
+    #    in 2010 ST held text state abbreviations and STATE held numeric
+    #    codes; by 2022 the numeric code is called ST. The contents give
+    #    it away, so field-match refuses to pair them by name alone.
+    # ------------------------------------------------------------------
+    print("\nWhy each suspect column was flagged:")
     for s in report.suspect:
         print(f"  {s.name}: {s.reason}")
 
     # ------------------------------------------------------------------
-    # 2. Not sure about one column? Look at its ranked candidates.
+    # 3. Not sure about one column? Drill into its ranked candidates.
     # ------------------------------------------------------------------
     print("\nEvery candidate considered for 2010's E_POV (top 5):")
     print(report.candidates("E_POV").to_string(index=False))
 
     # ------------------------------------------------------------------
-    # 3. Happy with the mapping? Either apply it directly:
+    # 4. Happy with the mapping? Either apply it directly:
     #
     #        aligned_2022 = report.apply(pd.read_csv(svi_2022))
     #

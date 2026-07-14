@@ -146,10 +146,19 @@ def numeric_similarity(series_1: pd.Series, series_2: pd.Series) -> float:
     """Similarity between two numeric columns.
 
     Compares the full empirical distributions via the two-sample
-    Kolmogorov-Smirnov statistic, both raw and median-centered (see
-    :func:`_distribution_similarity`). Unlike comparing means/ranges,
-    this is robust to outliers, negative values, and location shifts
-    between annual releases.
+    Kolmogorov-Smirnov statistic, both raw and median-centered so that
+    location shifts between annual releases still match. Unlike comparing
+    means/ranges, this is robust to outliers, negative values, and those
+    shifts.
+
+    Note
+    ----
+    This keys on the *shape* of the distribution, not on meaning: two
+    unrelated numeric columns with similar distributions (e.g. any two
+    roughly-normal columns on comparable scales) can score high. In
+    ``compare`` this is mitigated by ``name_weight`` and one-to-one
+    assignment, but a match resting on content alone (``name_score``
+    near 0) is worth an eye.
     """
     v1 = pd.to_numeric(series_1, errors="coerce").dropna().to_numpy(dtype=float)
     v2 = pd.to_numeric(series_2, errors="coerce").dropna().to_numpy(dtype=float)

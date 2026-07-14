@@ -94,6 +94,22 @@ class TestAssignmentStrategies:
             targets = [m.target for m in matches]
             assert len(targets) == len(set(targets))
 
+    def test_optimal_falls_back_to_greedy_without_scipy(self, annual_release, monkeypatch):
+        # With scipy unavailable, assignment="optimal" must warn and fall
+        # through to the greedy result instead of crashing.
+        import sys
+
+        monkeypatch.setitem(sys.modules, "scipy", None)
+        monkeypatch.setitem(sys.modules, "scipy.optimize", None)
+
+        last_year, this_year = annual_release
+        with pytest.warns(UserWarning, match="scipy"):
+            fell_back = match_fields(
+                last_year, this_year, match_threshold=0.3, assignment="optimal"
+            )
+        greedy = match_fields(last_year, this_year, match_threshold=0.3, assignment="greedy")
+        assert fell_back == greedy
+
     def test_all_returns_every_candidate_above_threshold(self):
         df1, df2 = self._ambiguous()
         matches = match_fields(df1, df2, match_threshold=0.0, assignment="all")
