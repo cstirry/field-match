@@ -6,6 +6,8 @@
 
 Match columns between dataset versions by comparing column names *and* column contents.
 
+No Python? Try the web app: **https://cstirry.github.io/field-match/**. Drop in two files, nothing to install.
+
 ```bash
 pip install field-match
 ```
