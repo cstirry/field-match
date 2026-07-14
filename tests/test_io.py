@@ -1,3 +1,5 @@
+import sys
+
 import pandas as pd
 import pytest
 
@@ -61,6 +63,60 @@ class TestReadTable:
         result = read_table(p)
         assert result["a"].tolist() == sample_df["a"].tolist()
 
+    def test_sas(self, tmp_path, sample_df):
+        # SAS Transport (.xpt): pandas' own read_sas needs no optional
+        # dependency, but pandas can't write .xpt/.sas7bdat, so pyreadstat
+        # (already a dependency for SPSS) writes the fixture. Only version 5
+        # is readable by pandas' XportReader.
+        pyreadstat = pytest.importorskip("pyreadstat")
+        p = tmp_path / "data.xpt"
+        pyreadstat.write_xport(sample_df, str(p), file_format_version=5)
+        result = read_table(p)
+        assert result["a"].tolist() == sample_df["a"].tolist()
+
+    def test_rds(self, tmp_path, sample_df):
+        pyreadr = pytest.importorskip("pyreadr")
+        p = tmp_path / "data.rds"
+        pyreadr.write_rds(str(p), sample_df)
+        result = read_table(p)
+        assert result["a"].tolist() == sample_df["a"].tolist()
+        assert result["b"].tolist() == sample_df["b"].tolist()
+
+    def test_rds_missing_pyreadr_names_the_extra(self, tmp_path, sample_df, monkeypatch):
+        pyreadr = pytest.importorskip("pyreadr")
+        p = tmp_path / "data.rds"
+        pyreadr.write_rds(str(p), sample_df)
+        monkeypatch.setitem(sys.modules, "pyreadr", None)
+        with pytest.raises(ImportError, match=r"field-match\[r\]"):
+            read_table(p)
+
+    def test_excel_missing_openpyxl_names_the_extra(self, tmp_path, sample_df, monkeypatch):
+        # Written while openpyxl is really installed; only the read is faked
+        # as dependency-less, to check the field-match-specific hint.
+        p = tmp_path / "data.xlsx"
+        sample_df.to_excel(p, index=False)
+        monkeypatch.setitem(sys.modules, "openpyxl", None)
+        with pytest.raises(ImportError, match=r"field-match\[excel\]"):
+            read_table(p)
+
+    def test_parquet_missing_pyarrow_names_the_extra(self, tmp_path, sample_df, monkeypatch):
+        p = tmp_path / "data.parquet"
+        sample_df.to_parquet(p, index=False)
+        monkeypatch.setitem(sys.modules, "pyarrow", None)
+        monkeypatch.setitem(sys.modules, "fastparquet", None)  # pandas' other parquet engine
+        with pytest.raises(ImportError, match=r"field-match\[parquet\]"):
+            read_table(p)
+
+    def test_spss_missing_pyreadstat_names_the_extra(self, tmp_path, sample_df, monkeypatch):
+        pytest.importorskip("pyreadstat")
+        p = tmp_path / "data.sav"
+        import pyreadstat
+
+        pyreadstat.write_sav(sample_df, str(p))
+        monkeypatch.setitem(sys.modules, "pyreadstat", None)
+        with pytest.raises(ImportError, match=r"field-match\[spss\]"):
+            read_table(p)
+
     def test_fixed_width_with_explicit_colspecs(self, tmp_path):
         p = tmp_path / "data.fwf"
         p.write_text("VA 100\nMD 200\nDC  30\n")
@@ -117,7 +173,20 @@ class TestReadTable:
             read_table(p)
 
     def test_supported_extensions_documented(self):
-        for ext in (".csv", ".tsv", ".xlsx", ".xls", ".parquet", ".json", ".dta", ".sav", ".fwf"):
+        for ext in (
+            ".csv",
+            ".tsv",
+            ".xlsx",
+            ".xls",
+            ".parquet",
+            ".json",
+            ".dta",
+            ".sav",
+            ".sas7bdat",
+            ".xpt",
+            ".rds",
+            ".fwf",
+        ):
             assert ext in SUPPORTED_EXTENSIONS
 
 

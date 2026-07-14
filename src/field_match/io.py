@@ -4,7 +4,7 @@ Not required to use field-match - you can always load DataFrames yourself
 however you like. This exists so pipeline code and the web app share one
 place that knows how to open each supported format, including multi-sheet
 Excel files and formats common in social-science data releases (SPSS,
-Stata, fixed-width text).
+SAS, Stata, R, fixed-width text).
 """
 
 from __future__ import annotations
@@ -25,6 +25,9 @@ SUPPORTED_EXTENSIONS = (
     ".json",
     ".dta",
     ".sav",
+    ".sas7bdat",
+    ".xpt",
+    ".rds",
     ".fwf",
 )
 
@@ -37,6 +40,9 @@ _FORMAT_BY_EXTENSION = {
     ".json": "json",
     ".dta": "stata",
     ".sav": "spss",
+    ".sas7bdat": "sas",
+    ".xpt": "sas",
+    ".rds": "rds",
     ".fwf": "fwf",
 }
 
@@ -92,16 +98,17 @@ def read_table(
     path:
         Path to a data file. Extension-recognized formats: ``.csv``,
         ``.tsv``, ``.xlsx``/``.xls`` (Excel), ``.parquet``, ``.json``,
-        ``.dta`` (Stata), ``.sav`` (SPSS), ``.fwf`` (fixed-width text).
+        ``.dta`` (Stata), ``.sav`` (SPSS), ``.sas7bdat``/``.xpt`` (SAS),
+        ``.rds`` (R), ``.fwf`` (fixed-width text).
     sheet_name:
         Sheet to read for Excel files (name or 0-based index). Ignored for
         other formats. Use :func:`list_sheets` to see what's available.
     file_format:
         Override format detection - one of the values in ``_FILE_FORMATS``
         (``"csv"``, ``"excel"``, ``"fwf"``, ``"json"``, ``"parquet"``,
-        ``"spss"``, ``"stata"``, ``"tsv"``). Required for ambiguous
-        extensions like ``.txt``/``.dat`` that don't imply a single
-        format.
+        ``"rds"``, ``"sas"``, ``"spss"``, ``"stata"``, ``"tsv"``). Required
+        for ambiguous extensions like ``.txt``/``.dat`` that don't imply a
+        single format.
     **kwargs:
         Passed through to the underlying pandas reader. For fixed-width
         files, pass ``colspecs`` or ``widths`` if you know the layout;
@@ -118,8 +125,11 @@ def read_table(
         If the extension isn't recognized and no ``file_format`` is
         given, or an unrecognized ``file_format`` is passed.
     ImportError
-        For SPSS files, if ``pyreadstat`` isn't installed
-        (``pip install "field-match[spss]"``).
+        If the format needs an optional dependency that isn't installed:
+        Excel needs ``openpyxl`` (``field-match[excel]``), Parquet needs
+        ``pyarrow`` (``field-match[parquet]``), SPSS needs ``pyreadstat``
+        (``field-match[spss]``), R data needs ``pyreadr``
+        (``field-match[r]``). SAS needs no extra dependency.
     """
     path_str = str(path)
     suffix = Path(path_str).suffix.lower()
@@ -146,9 +156,19 @@ def read_table(
         kwargs.setdefault("sep", "\t")
         return _read_text_table(pd.read_csv, path_str, low_memory=False, **kwargs)
     if fmt == "excel":
-        return pd.read_excel(path_str, sheet_name=sheet_name, **kwargs)
+        try:
+            return pd.read_excel(path_str, sheet_name=sheet_name, **kwargs)
+        except ImportError as e:
+            raise ImportError(
+                'Reading Excel (.xlsx/.xls) files needs openpyxl: pip install "field-match[excel]"'
+            ) from e
     if fmt == "parquet":
-        return pd.read_parquet(path_str, **kwargs)
+        try:
+            return pd.read_parquet(path_str, **kwargs)
+        except ImportError as e:
+            raise ImportError(
+                'Reading Parquet files needs pyarrow: pip install "field-match[parquet]"'
+            ) from e
     if fmt == "json":
         return pd.read_json(path_str, **kwargs)
     if fmt == "stata":
@@ -160,6 +180,21 @@ def read_table(
             raise ImportError(
                 'Reading SPSS (.sav) files needs pyreadstat: pip install "field-match[spss]"'
             ) from e
+    if fmt == "sas":
+        # .sas7bdat and .xpt are both handled by pandas' own SAS reader -
+        # no optional dependency needed.
+        return pd.read_sas(path_str, **kwargs)
+    if fmt == "rds":
+        try:
+            import pyreadr
+        except ImportError as e:
+            raise ImportError(
+                'Reading R data (.rds) files needs pyreadr: pip install "field-match[r]"'
+            ) from e
+        # .rds stores exactly one R object; pyreadr always returns it keyed
+        # under the file's variable name or None, so just take the one value.
+        result = pyreadr.read_r(path_str, **kwargs)
+        return next(iter(result.values()))
     if fmt == "fwf":
         kwargs.setdefault("colspecs", "infer")
         return _read_text_table(pd.read_fwf, path_str, **kwargs)
