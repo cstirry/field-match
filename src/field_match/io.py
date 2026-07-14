@@ -9,6 +9,7 @@ SAS, Stata, R, fixed-width text).
 
 from __future__ import annotations
 
+import sys
 import warnings
 from pathlib import Path
 
@@ -188,9 +189,13 @@ def read_table(
         try:
             import pyreadr
         except ImportError as e:
-            raise ImportError(
-                'Reading R data (.rds) files needs pyreadr: pip install "field-match[r]"'
-            ) from e
+            hint = (
+                "pyreadr has no prebuilt wheel for Python 3.9 (only 3.10+); "
+                "upgrade Python to use .rds files"
+                if sys.version_info < (3, 10)
+                else 'pip install "field-match[r]"'
+            )
+            raise ImportError(f"Reading R data (.rds) files needs pyreadr: {hint}") from e
         # .rds stores exactly one R object; pyreadr always returns it keyed
         # under the file's variable name or None, so just take the one value.
         result = pyreadr.read_r(path_str, **kwargs)

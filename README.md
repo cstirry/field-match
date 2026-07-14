@@ -46,7 +46,7 @@ pip install "field-match[optimal]"   # scipy, for optimal assignment
 pip install "field-match[excel]"     # openpyxl, for Excel files
 pip install "field-match[parquet]"   # pyarrow, for Parquet files
 pip install "field-match[spss]"      # pyreadstat, for SPSS files
-pip install "field-match[r]"         # pyreadr, for R (.rds) files
+pip install "field-match[r]"         # pyreadr, for R (.rds) files - needs Python 3.10+
 pip install "field-match[io]"        # excel + parquet + spss + r (SAS, Stata, and fixed-width need no extra)
 ```
 
