@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- `read_table` now reads SAS (`.sas7bdat`/`.xpt`, no extra dependency needed) and R data (`.rds`, needs the new `field-match[r]` extra via `pyreadr`).
+- Missing-dependency errors for Excel and Parquet now name the right extra (`pip install "field-match[excel]"` / `"[parquet]"`), matching the SPSS error's existing behavior.
+- New example: [namcs_formats.py](examples/namcs_formats.py) compares NAMCS 2022 vs. 2024 across SAS, Stata, and R, confirming `compare()` gives the same answer regardless of format.
+
 ## 0.2.0
 
 Full rewrite of the 0.1.0 prototype. Breaking changes throughout.
