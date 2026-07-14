@@ -46,12 +46,13 @@ pip install "field-match[optimal]"   # scipy, for optimal assignment
 pip install "field-match[excel]"     # openpyxl, for Excel files
 pip install "field-match[parquet]"   # pyarrow, for Parquet files
 pip install "field-match[spss]"      # pyreadstat, for SPSS files
-pip install "field-match[io]"        # excel + parquet + spss (Stata and fixed-width need no extra)
+pip install "field-match[r]"         # pyreadr, for R (.rds) files - needs Python 3.10+
+pip install "field-match[io]"        # excel + parquet + spss + r (SAS, Stata, and fixed-width need no extra)
 ```
 
 ### Reading files
 
-`field-match` operates on DataFrames, so any way you get one works (e.g. `pd.read_csv`, etc.). `read_table` is a small convenience to support the web app that dispatches on file extension. Recognized extensions: CSV, TSV, Excel, Parquet, JSON, Stata (`.dta`), SPSS (`.sav`), fixed-width (`.fwf`).
+`field-match` operates on DataFrames, so any way you get one works (e.g. `pd.read_csv`, etc.). `read_table` is a small convenience to support the web app that dispatches on file extension. Recognized extensions: CSV, TSV, Excel, Parquet, JSON, Stata (`.dta`), SPSS (`.sav`), SAS (`.sas7bdat`/`.xpt`), R (`.rds`), fixed-width (`.fwf`).
 
 ```python
 from field_match import read_table, list_sheets
@@ -62,6 +63,8 @@ list_sheets("release_2023.xlsx")   # ['Data', 'Notes', 'Codebook']
 
 df = read_table("eavs_2018.dta")                          # Stata
 df = read_table("survey.sav")                             # SPSS - needs `field-match[spss]`
+df = read_table("namcshc2024_sas.sas7bdat")               # SAS - needs no extra dependency
+df = read_table("namcshc2024_r.rds")                      # R - needs `field-match[r]`
 df = read_table("layout.fwf")                              # fixed-width, columns auto-inferred by default
 ```
 
@@ -152,17 +155,19 @@ Content matching keys on the *shape* of a column's values, not their meaning. Nu
 Each script in [examples/](examples) downloads a real government data release and crosswalks it:
 
 - [cdc_atsdr_svi.py](examples/cdc_atsdr_svi.py) - CDC/ATSDR Social Vulnerability Index, 2010 vs. 2022. Catches the `ST`/`STATE` reused-name trap, where both names exist in both files but swapped meaning.
-- [cdc_places.py](examples/cdc_places.py) - CDC 500 Cities / PLACES, 2019 vs. 2020. Identifies column renmaing like `cityname` → `locationname` and `populationcount` → `totalpopulation` based on content.
+- [cdc_places.py](examples/cdc_places.py) - CDC 500 Cities / PLACES, 2019 vs. 2020. Identifies column renaming like `populationcount` → `totalpopulation` based on content.
 - [imls_pls.py](examples/imls_pls.py) - IMLS Public Libraries Survey, 1992 vs. 2022.
+- [namcs_formats.py](examples/namcs_formats.py) - NAMCS 2022 vs. 2024, read three ways: SAS, Stata, and R. 
 
 ```bash
 pip install "field-match[optimal]"
 python examples/cdc_atsdr_svi.py
 python examples/cdc_places.py
 python examples/imls_pls.py
+python examples/namcs_formats.py
 ```
 
-Each script saves its two files in `examples/data/` the first time it runs, so you can also drag that same pair into the web app to see the comparison visually.
+Each script saves its files in `examples/data/` the first time it runs, so you can also drag that same pair into the web app to see the comparison visually.
 
 ## Web app (no Python required)
 
