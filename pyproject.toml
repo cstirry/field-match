@@ -5,12 +5,12 @@ build-backend = "hatchling.build"
 [project]
 name = "field-match"
 dynamic = ["version"]  # single source of truth: __version__ in src/field_match/__init__.py
-description = "Match columns between datasets by name and content similarity - align new, renamed, or headerless data to an existing schema."
+description = "Match columns between dataset versions by comparing column names and column contents."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.9"
-authors = [{ name = "Christine Stirrat" }]
-keywords = ["schema-matching", "data-cleaning", "pandas", "csv", "columns", "fuzzy-matching"]
+authors = [{ name = "cstirry" }]
+keywords = ["schema-matching", "content-matching", "dataset-comparison", "column-mapping", "field-mapping"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
@@ -34,8 +34,9 @@ optimal = ["scipy>=1.9"]          # Hungarian algorithm for one-to-one assignmen
 excel = ["openpyxl>=3.1"]         # pd.read_excel support
 parquet = ["pyarrow>=10.0"]       # pd.read_parquet support
 spss = ["pyreadstat>=1.2"]        # pd.read_spss support
-io = ["field-match[excel,parquet,spss]"]  # everything read_table() can open
-dev = ["pytest>=7", "ruff>=0.4", "scipy>=1.9", "openpyxl>=3.1", "pyarrow>=10.0", "pyreadstat>=1.2"]
+r = ["pyreadr>=0.5"]              # .rds support (SAS/Stata need no extra dependency)
+io = ["field-match[excel,parquet,spss,r]"]  # everything read_table() can open
+dev = ["pytest>=7", "ruff>=0.4", "scipy>=1.9", "openpyxl>=3.1", "pyarrow>=10.0", "pyreadstat>=1.2", "pyreadr>=0.5"]
 
 [project.urls]
 Homepage = "https://github.com/cstirry/field-match"
