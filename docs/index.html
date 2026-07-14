@@ -295,7 +295,7 @@ async function boot(){
     // Fetch the wheel with revalidation (cache:"no-cache") so browsers
     // don't keep serving a stale copy after the site updates, then
     // install it from the virtual filesystem.
-    const whl = "field_match-0.2.0-py3-none-any.whl";
+    const whl = "field_match-0.3.0-py3-none-any.whl";
     const buf = new Uint8Array(await (await fetch("./"+whl, {cache:"no-cache"})).arrayBuffer());
     pyodide.FS.writeFile("/"+whl, buf);
     await micropip.install(["openpyxl", "emfs:/"+whl]);
