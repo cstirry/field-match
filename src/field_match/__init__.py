@@ -1,7 +1,44 @@
-"""Top-level package for field-match."""
+"""field-match: compare datasets by column names and contents."""
 
-__author__ = """Christine Stirrat"""
-__email__ = 'christine.stirrat@gmail.com'
-__version__ = '0.1.0'
+from .compare import (
+    Candidate,
+    ComparisonReport,
+    Suspect,
+    align_to_model,
+    compare,
+    generate_column_rename,
+)
+from .io import list_sheets, read_table
+from .matching import FieldMatch, match_fields, similarity_scores
+from .similarity import (
+    boolean_similarity,
+    datetime_similarity,
+    name_similarity,
+    numeric_similarity,
+    text_similarity,
+)
 
-from .field_match import field_similarity_report, generate_column_rename
+__version__ = "0.2.0"
+
+__all__ = [
+    # the entry point
+    "compare",
+    "ComparisonReport",
+    "Suspect",
+    "Candidate",
+    # conveniences
+    "align_to_model",
+    "generate_column_rename",
+    "read_table",
+    "list_sheets",
+    # machinery
+    "FieldMatch",
+    "match_fields",
+    "similarity_scores",
+    "name_similarity",
+    "numeric_similarity",
+    "datetime_similarity",
+    "boolean_similarity",
+    "text_similarity",
+    "__version__",
+]
