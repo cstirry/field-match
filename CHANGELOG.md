@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- New documentation site at https://field-match.readthedocs.io/ (MkDocs Material, sources in `docs_src/`, API reference generated from docstrings). The README slimmed down to a landing page: positioning, quick start, how field-match relates to Great Expectations/pandera, datacompy, record linkage, and Valentine, and links into the docs.
+
 ## 0.3.0
 
 - `read_table` now reads SAS (`.sas7bdat`/`.xpt`, no extra dependency needed) and R data (`.rds`, needs the new `field-match[r]` extra via `pyreadr`; requires Python 3.10+, since `pyreadr` stopped shipping a Python 3.9 wheel as of its 0.5.4 release).
