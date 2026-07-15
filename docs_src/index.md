@@ -1,6 +1,6 @@
 # Getting started
 
-A new release of a dataset you depend on just arrived. Before it breaks last year's analysis, your data pipeline, or your model, field-match shows you in seconds what likely changed: which columns kept their meaning, which were renamed, which changed under the same name, and which were dropped or added. It judges by the values as well as the names, so you don't have to dig through codebooks. Built with annual public interest data releases in mind.
+field-match compares a dataset against a reference dataset and builds a column crosswalk: which columns still match on name and content, which appear renamed, which share a name but no longer match in content, and which were added or dropped. Matching considers column contents as well as names, so a rename is identified even without a codebook.
 
 No Python? Try the [web app](web-app.md) instead. Drop in two files, nothing to install.
 
@@ -42,6 +42,12 @@ report.candidates("E_POV")     # ranked candidates for one column, with scores
 df = report.apply(new_data)    # rename the new data to the reference's names
 ```
 
+## No rules to write
+
+Validation frameworks make you author a schema first: every column, its type, its constraints, kept up to date by hand. field-match's starting point is different: your last clean release *is* the expectation suite. The reference dataset already encodes what column names existed, what type each column was, and what its values looked like, so field-match checks the new release against that directly and, where something doesn't line up, proposes what happened instead of just failing.
+
+That also defines the boundary honestly: field-match answers the schema question, which column is which, and whether any changed meaning. It does not check value-level rules like "no nulls" or "between 0 and 1." If you need those, a validation library is the right tool after the columns are aligned.
+
 ## The reference can be more than a dataset
 
 `compare(reference, new_data)` accepts whatever you have as the reference:
@@ -70,9 +76,12 @@ else:
     df = report.apply(incoming)
 ```
 
+## Where it shines
+
+Public interest datasets: annual government and institutional releases like the CDC's Social Vulnerability Index, PLACES, NAMCS, or the IMLS Public Libraries Survey. These are exactly the files where columns get renamed between years, codes change type, documentation lags, and a decade-long analysis depends on getting the crosswalk right.
+
 ## Where to next
 
-- [Why field-match](why.md): what it does that validation and diff tools don't.
 - [The report](report.md): the five categories and the report object in full.
 - [Tuning](tuning.md): the two thresholds and the name/content weight.
-- [Examples](examples.md): four walkthroughs on real government data releases.
+- [Examples](examples.md): four walkthroughs on real government data releases, real downloads included.

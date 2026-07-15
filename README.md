@@ -5,7 +5,11 @@
 [![Docs](https://readthedocs.org/projects/field-match/badge/?version=latest)](https://field-match.readthedocs.io/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A new release of a dataset you depend on just arrived. Before it breaks last year's analysis, your data pipeline, or your model, field-match shows you in seconds what likely changed: which columns kept their meaning, which were renamed, which changed under the same name, and which were dropped or added. It judges by the values as well as the names, so you don't have to dig through codebooks. Built with annual public interest data releases in mind.
+Names, types, and values can all shift between data releases, quietly breaking anything downstream that assumes a stable schema. `field-match` compares a dataset against a reference dataset and builds a column crosswalk, reporting which columns still match on name and content, which appear renamed, which share a name but no longer match in content, and which were added or dropped. Matching considers column contents as well as names, so a rename is identified even without a codebook.
+
+Unlike other libraries in the data validation and data quality ecosystem, field-match answers the earlier question of which column is which. Some tools diff values once you know the mapping; others require you to write out rules. field-match instead uses your last clean release as the reference. It works across numeric, datetime, boolean, and text columns, reads CSV, Stata, SAS, and fixed-width files with no extra dependencies, plus Excel, Parquet, SPSS, and R via optional extras, and a browser-based version (no install) runs the same matching in-browser via Pyodide.
+
+Developed for recurring public-interest data releases, where column drift is common.
 
 No Python? Try the web app: **https://cstirry.github.io/field-match/**. Drop in two files, nothing to install.
 
@@ -33,13 +37,6 @@ print(report)
 Review the proposed mapping, then apply it: `df = report.apply(new_data)`. The reference can be a previous dataset, a list of expected column names, or a fitted sklearn model.
 
 **[Full documentation](https://field-match.readthedocs.io/)**: the report in depth, supported file formats, tuning, how matching works, and the API reference.
-
-## How it relates to tools you may know
-
-- **Great Expectations, pandera** validate data against rules you write and maintain. field-match needs no rules: your last clean release is the expectation suite, and instead of just failing on a missing column, it proposes what happened to it.
-- **datacompy, pandas `DataFrame.compare`** diff values once you know which column maps to which. field-match answers the question that comes first: which column *is* which.
-- **splink, recordlinkage** match rows (people, records). field-match matches columns.
-- **Valentine** benchmarks academic schema-matching algorithms. field-match is the practitioner workflow: one call, a categorical report, review, apply.
 
 ## Examples with real data
 

@@ -33,7 +33,6 @@ theme:
 
 nav:
   - Getting started: index.md
-  - Why field-match: why.md
   - Guide:
       - The report: report.md
       - Reading files: reading-files.md
