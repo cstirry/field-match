@@ -2,7 +2,7 @@
 
 field-match builds a column crosswalk between two dataset versions: it compares every column pair on name *and* content, then reports which columns still match, which appear renamed, which share a name but no longer match in content, and which were added or dropped. Because the matching considers contents as well as names, a rename is identified even without a codebook.
 
-Developed for recurring public-interest data releases (CDC SVI, PLACES, NAMCS, IMLS PLS), where column drift is common.
+Developed for recurring public-interest data releases, where column drift is common.
 
 No Python? Try the [web app](web-app.md) instead. Drop in two files, nothing to install.
 
@@ -15,7 +15,7 @@ pip install field-match
 - CSV, TSV, JSON, Stata, SAS, fixed-width: no extra install.
 - Other formats: one optional extra each, see [Reading files](reading-files.md).
 
-## First comparison
+## Comparing two datasets
 
 ```python
 from field_match import compare, read_table
