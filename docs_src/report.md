@@ -1,77 +1,118 @@
 # The report
 
-`compare()` returns a `ComparisonReport`: a plain Python object holding the structured results, which also knows how to print itself. `print(report)` shows the counts; `report.summary()` adds the column names in each category.
+`compare()` returns a `ComparisonReport`: the crosswalk as a plain Python object. `print(report)` shows the counts; `report.summary()` adds the column names per category.
 
 ## The five categories
 
-Every column lands in exactly one pile:
+| Category | Meaning |
+|---|---|
+| `verified` | column name and contents both match |
+| `renamed` | contents match, but under a different column name |
+| `suspect` | column name matches, but contents do not |
+| `dropped` | missing from the new dataset |
+| `added` | missing from the reference dataset |
 
-| Category | Meaning | Needs action? |
-|---|---|---|
-| `verified` | field name and contents both match | No. Safe to ignore. |
-| `renamed` | contents match, but under a different field name | Review the proposed mapping. |
-| `suspect` | field name matches, but contents do not | Yes, check these first. |
-| `dropped` | reference column missing from the new dataset | Decide: really gone, or lower the threshold? |
-| `added` | new dataset column is not in the reference dataset | Decide: keep or ignore. |
+`renamed` and `suspect` are proposed from evidence rather than exact agreement, so they are generally the ones to review before applying the mapping. Whether `dropped` and `added` matter depends on whether the change was expected.
 
-**Suspect is the pile that earns its keep.** It holds names that exist on both sides but no longer mean the same thing. A real case from the CDC's Social Vulnerability Index: in 2010, `ST` held text state abbreviations and `STATE` held numeric codes; by 2022 the numeric code was called `ST`. Matching by name alone would silently merge codes into abbreviations. field-match checks the contents, refuses the name-only pairing, and reports:
+## Suspect columns
+
+A suspect column exists under the same name on both sides, but the contents no longer line up. Each entry is a `Suspect` with:
+
+- `name`: the shared column name
+- `reason`: a plain-language explanation
+- `score`: the namesake pair's own score, or `None` when the contents were not comparable
+
+Example from the CDC Social Vulnerability Index, where `ST` and `STATE` swapped meanings between 2010 and 2022:
 
 ```
 ST: contents are different types (text in the reference, numeric in the new data);
     the reference column matched 'ST_ABBR' instead; the new column matched from 'STATE' instead
 ```
 
-Each suspect entry carries a plain-language `reason` like that one, plus the pair's score when the contents were comparable.
-
-## Acting on the report
+## Applying the mapping
 
 ```python
 report.mapping                 # {new_column: reference_column} for every accepted match
-df = report.apply(new_data)    # rename the new data to the reference's names
+df = report.apply(new_data)    # copy of new_data, renamed to the reference's names
 ```
 
-Prefer to hand-check before renaming? `report.rename_snippet()` writes a pasteable snippet with one commented line per decision, in the new file's own column order. Same-name matches sit in a leading comment (verified, nothing to rename); only actual renames go in the dict:
+To review by hand first, `report.rename_snippet()` returns a pasteable dict with one commented line per decision, in the new file's own column order. Same-name matches sit in a leading comment; only actual renames go in the dict:
 
 ```python
 # Matched with the same name in both files - no rename needed:
-#   'FIPS'  (score=1.00, numeric)
+#   'fipscode'  (score=1.00, numeric)
 rename_dict = {
-    'EPL_AGE65': 'PL_AGE65',  # score=0.94 (numeric)
+    'locationname': 'cityname',  # score=0.91 (text)
     ...
 }
 # Apply with: new_df = new_df.rename(columns=rename_dict)
 ```
 
-## Digging into the evidence
+`generate_column_rename(data1, data2)` is a one-call shortcut for `compare(data1, data2).rename_snippet()`.
+
+## The evidence
 
 Every decision has scores behind it, and the report keeps them:
 
 ```python
-report.scores                  # the full evidence table: one row per compared pair
-report.candidates("E_POV")     # one column's ranked candidates, best first
+report.scores                            # full evidence table: one row per compared pair
+report.candidates("populationcount")     # one column's ranked candidates, best first (limit=5)
 ```
 
-`candidates` is the drill-down for "why did it pick that?". From the SVI example:
-
 ```
-source   target  family  name_score  content_score  score
- E_POV E_POV150 numeric         0.9          0.829  0.857
- E_POV E_DISABL numeric         0.5          0.953  0.772
- E_POV  E_AGE65 numeric         0.5          0.899  0.739
+         source           target  family  name_score  content_score  score
+populationcount  totalpopulation numeric        0.62          0.941  0.813
+populationcount   householdcount numeric        0.55          0.760  0.676
+populationcount     medianincome numeric        0.00          0.702  0.421
 ```
 
-`E_POV150` wins on the combination of name and content evidence, and you can see exactly how close the runners-up were.
+`totalpopulation` wins on the combined evidence, and the runners-up show how close the call was.
 
-## For pipelines
+Each accepted match is a `FieldMatch` with `source`, `target`, `score`, `name_score`, `content_score`, and `family` (the inferred type the pair was compared as).
+
+## Pipeline output
 
 ```python
 report.to_dict()               # JSON-friendly: counts, categories, mapping, notes
 report.suggestions             # closest below-threshold candidate for each dropped column
-report.notes                   # warnings worth knowing about (see below)
+report.notes                   # data conditions that limited the comparison
 ```
 
-`notes` flags conditions that affect how much the report can verify:
+Each suggestion is a `Candidate`: `column` (the dropped reference column), `candidate` (its closest column in the new data), `score`.
 
-- **Headerless data**: if a file has no column headers (pandas numbers them), matching switches to contents only and the report says so.
-- **Duplicate column names**: only the first occurrence of each is matched; noted.
-- **Entirely empty columns**: their contents cannot be checked; listed by name.
+`notes` flags:
+
+- **Headerless data**: no column headers, so matching used contents only.
+- **Duplicate column names**: only the first occurrence of each was matched.
+- **Entirely empty columns**: contents could not be checked; listed by name.
+
+## Methods
+
+| Method | Returns |
+|---|---|
+| `apply(new_df)` | copy of `new_df` renamed to the reference's names |
+| `candidates(column, limit=5)` | ranked candidates for one column, as a DataFrame |
+| `rename_snippet()` | pasteable rename dict, as text |
+| `to_dict()` | JSON-friendly dict of the whole report |
+| `summary(show_columns=True, max_columns=8)` | the report as readable text |
+
+## Attributes
+
+| Attribute | Type | Holds |
+|---|---|---|
+| `verified` | list of `FieldMatch` | same-name matches with agreeing contents |
+| `renamed` | list of `FieldMatch` | matches under a different name |
+| `suspect` | list of `Suspect` | same-name pairs whose contents do not line up |
+| `dropped` | list of str | reference columns with no acceptable match |
+| `added` | list of str | new columns nothing claimed |
+| `suggestions` | list of `Candidate` | closest below-threshold candidate per dropped column |
+| `matches` | list of `FieldMatch` | every accepted match |
+| `mapping` | dict | `{new_column: reference_column}` |
+| `scores` | DataFrame | the full evidence table |
+| `notes` | list of str | warnings about the data |
+| `reference_columns`, `new_columns` | list of str | all column names on each side |
+| `row_counts` | tuple | (reference rows, new rows); reference is `None` for names-only |
+| `match_threshold`, `verified_threshold` | float | the thresholds this report was generated with |
+| `name_only` | bool | `True` if the reference was column names only |
+
+Full signatures: [API reference](api.md).
