@@ -1,6 +1,6 @@
 # Tuning
 
-All tuning parameters are optional and keyword-only (pass them by name). The defaults are sensible for typical release-to-release comparisons; reach for these when the data is unusual.
+All tuning parameters are optional and keyword-only.
 
 | Parameter | Range | Default | Meaning |
 |---|---|---|---|
@@ -10,29 +10,28 @@ All tuning parameters are optional and keyword-only (pass them by name). The def
 | `sample_size` | rows | 2000 | files longer than this are sampled before content comparison |
 | `exact_first` | bool | True | pair identically named, same-type columns immediately, skipping the expensive comparison |
 
-## match_threshold: how sure before proposing a match
+## match_threshold
 
-Every candidate pair gets a score from 0 (nothing alike) to 1 (identical). Pairs below `match_threshold` are never proposed.
+Candidate pairs score 0 (nothing alike) to 1 (identical). Pairs below `match_threshold` are never proposed.
 
-- **Raise it** when you would rather miss a real match than review a wrong one. Unmatched columns turn up as dropped/added instead.
-- **Lower it** when the datasets are far apart and real matches score low. The [IMLS example](examples.md) spans thirty years of drift: at the default 0.5 several true renames are missed, at 0.4 they appear, along with one wrong suggestion that review catches. That tradeoff is the knob's whole purpose.
+- **Raise**: miss a real match rather than review a wrong one. Unmatched columns turn up as dropped/added.
+- **Lower**: datasets far apart, real matches score low. [IMLS example](examples.md): at the default 0.5, several true renames are missed; at 0.4, they appear, along with one wrong suggestion that review catches.
 
-## verified_threshold: how sure before you can stop looking
+## verified_threshold
 
-A same-name match needs a score of at least `verified_threshold` to land in the verified pile; below it, the pair is listed as suspect. This is the bar for "safe to ignore", so it is deliberately stricter than the bar for "worth proposing". Raise it for a more cautious report; a column whose contents shifted between releases then gets flagged for a look instead of waved through.
+A same-name match needs a score of at least `verified_threshold` to land in `verified`; below it, `suspect`. Stricter than the bar for proposing a match. Raise it for a more cautious report.
 
-## name_weight: names versus values
-
-The final score blends name similarity and content similarity:
+## name_weight
 
 ```
 score = name_weight * name_similarity + (1 - name_weight) * content_similarity
 ```
 
-- **Toward 0**: trust the values. Use when headers are junk (`Q1`, `var001`) or missing. Headerless files are detected automatically and matched on contents alone.
+- **Toward 0**: trust the values. Use when headers are junk (`Q1`, `var001`) or missing; headerless files are matched on contents alone automatically.
 - **Toward 1**: trust the names. Use when contents are unreliable, e.g. mostly-empty columns.
-- The default 0.4 lets content carry a match when names give nothing: in the [CDC PLACES example](examples.md), `cityname` became `locationname`, which scores 0 on name similarity, and the values carry the match entirely.
+- **Default 0.4**: content carries a match when names give nothing. [CDC PLACES example](examples.md): `cityname` to `locationname` scores 0 on name similarity; the values carry the match.
 
-## sample_size and exact_first: speed
+## sample_size and exact_first
 
-Content comparison samples long files at `sample_size` rows (deterministically, so scores are reproducible). And `exact_first` locks in identically named, same-type columns before the all-pairs comparison, which both speeds things up on mostly-shared schemas and prevents a same-named column from being claimed by a fuzzy lookalike. Set `exact_first=False` to force the full comparison for every column.
+- `sample_size`: content comparison samples long files at this many rows, deterministically (reproducible scores).
+- `exact_first`: locks in identically named, same-type columns before the all-pairs comparison. Speeds up mostly-shared schemas and prevents a same-named column from being claimed by a fuzzy lookalike. Set `exact_first=False` to force the full comparison for every column.

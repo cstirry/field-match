@@ -371,11 +371,11 @@ json.dumps({
 
 // ---------- rendering ----------
 const BLURBS={
-  verified:"field name and contents both match",
-  renamed:"contents match, but under a different field name — review",
-  suspect:"field name matches, but contents do not — review",
-  dropped:"reference column with no match in the second dataset",
-  added:"second-dataset column with no match in the reference",
+  verified:"column name and contents both match",
+  renamed:"contents match, but under a different column name",
+  suspect:"column name matches, but contents do not",
+  dropped:"missing from the second dataset",
+  added:"missing from the reference",
 };
 
 function renderReportCard(r){
