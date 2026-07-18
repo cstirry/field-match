@@ -164,3 +164,6 @@ examples/data/
 
 # macOS
 .DS_Store
+
+# mkdocs build output
+site/

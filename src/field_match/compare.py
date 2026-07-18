@@ -52,11 +52,11 @@ class Candidate:
 
 
 _BLURBS = {
-    "verified": "field name and contents both match",
-    "renamed": "contents match, but under a different field name - review",
-    "suspect": "field name matches, but contents do not - review",
-    "dropped": "reference column missing from the new dataset",
-    "added": "new dataset column is not in the reference dataset",
+    "verified": "column name and contents both match",
+    "renamed": "contents match, but under a different column name",
+    "suspect": "column name matches, but contents do not",
+    "dropped": "missing from the new dataset",
+    "added": "missing from the reference dataset",
 }
 
 
@@ -77,6 +77,47 @@ class ComparisonReport:
     ``print(report)`` shows the counts; ``report.summary()`` adds the
     column names. The evidence behind every decision is in
     ``report.scores`` and ``report.candidates(column)``.
+
+    Attributes
+    ----------
+    verified : list of FieldMatch
+        Matched under the same name with contents that agree.
+    renamed : list of FieldMatch
+        Matched confidently, but under a different name.
+    suspect : list of Suspect
+        Same name on both sides, but the pair does not line up; each
+        entry carries a plain-language ``reason``.
+    dropped : list of str
+        Reference columns with no acceptable match.
+    added : list of str
+        New columns nothing claimed.
+    suggestions : list of Candidate
+        For each dropped column, its closest below-threshold
+        candidate, if any.
+    matches : list of FieldMatch
+        Every accepted match: verified, renamed, and drifted namesakes.
+    mapping : dict of str to str
+        ``{new_column: reference_column}`` for every accepted match.
+    scores : pandas.DataFrame
+        The full evidence table, one row per compared pair (see
+        :func:`field_match.matching.similarity_scores`).
+    notes : list of str
+        Warnings about conditions that affect what could be verified
+        (headerless data, duplicate names, empty columns).
+    reference_columns : list of str
+        Every column name from the reference side.
+    new_columns : list of str
+        Every column name from the new data.
+    row_counts : tuple of (int or None, int)
+        Reference row count (``None`` for a names-only comparison) and
+        new data row count.
+    match_threshold : float
+        The ``match_threshold`` this report was generated with.
+    verified_threshold : float
+        The ``verified_threshold`` this report was generated with.
+    name_only : bool
+        Whether the reference was column names only, so contents were
+        not checked.
     """
 
     verified: list[FieldMatch]
@@ -454,8 +495,8 @@ def compare(
         means fewer, more confident matches. Default 0.5.
     verified_threshold:
         Minimum score in ``[0, 1]`` for a same-name match to count as
-        verified; below it the pair is listed as suspect. Higher means
-        a more cautious "safe to ignore" pile. Default 0.75.
+        verified; below it the pair is listed as suspect. Higher sends
+        more borderline same-name matches to suspect. Default 0.75.
     name_weight:
         How the score is split between names and contents: 0 judges
         only by the values (used automatically for headerless data),

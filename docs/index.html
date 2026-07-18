@@ -295,7 +295,7 @@ async function boot(){
     // Fetch the wheel with revalidation (cache:"no-cache") so browsers
     // don't keep serving a stale copy after the site updates, then
     // install it from the virtual filesystem.
-    const whl = "field_match-0.3.0-py3-none-any.whl";
+    const whl = "field_match-0.4.0-py3-none-any.whl";
     const buf = new Uint8Array(await (await fetch("./"+whl, {cache:"no-cache"})).arrayBuffer());
     pyodide.FS.writeFile("/"+whl, buf);
     await micropip.install(["openpyxl", "emfs:/"+whl]);
@@ -371,11 +371,11 @@ json.dumps({
 
 // ---------- rendering ----------
 const BLURBS={
-  verified:"field name and contents both match",
-  renamed:"contents match, but under a different field name — review",
-  suspect:"field name matches, but contents do not — review",
-  dropped:"reference column with no match in the second dataset",
-  added:"second-dataset column with no match in the reference",
+  verified:"column name and contents both match",
+  renamed:"contents match, but under a different column name",
+  suspect:"column name matches, but contents do not",
+  dropped:"missing from the second dataset",
+  added:"missing from the reference",
 };
 
 function renderReportCard(r){

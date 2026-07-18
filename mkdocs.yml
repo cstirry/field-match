@@ -1,0 +1,65 @@
+site_name: field-match
+site_description: Build a column crosswalk between dataset versions by matching on column names and column contents.
+site_url: https://field-match.readthedocs.io/
+repo_url: https://github.com/cstirry/field-match
+repo_name: cstirry/field-match
+
+# The docs/ folder serves the web app on GitHub Pages, so the
+# documentation sources live in docs_src/ instead.
+docs_dir: docs_src
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.footer
+    - content.code.copy
+    - toc.integrate
+
+nav:
+  - Getting started: index.md
+  - Guide:
+      - The report: report.md
+      - Reading files: reading-files.md
+      - Tuning: tuning.md
+      - How matching works: how-it-works.md
+  - Examples: examples.md
+  - Web app: web-app.md
+  - API reference: api.md
+  - Contributing: contributing.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+            show_source: false
+            show_root_heading: true
+            show_root_full_path: false
+            members_order: source
+            separate_signature: true
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences

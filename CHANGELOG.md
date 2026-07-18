@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0
+
+- New documentation site at https://field-match.readthedocs.io/ (MkDocs Material, sources in `docs_src/`, API reference generated from docstrings, hosted on Read the Docs). The README is now a landing page: positioning, quick start, examples, and a link into the docs.
+- Report category text is plainer: dropped the "- review" suffix, and `field` -> `column` throughout to match the rest of the API (e.g. `"field name and contents both match"` is now `"column name and contents both match"`). This changes the text `print(report)` and `report.summary()` produce.
+- `ComparisonReport`'s full set of methods and attributes is now documented (numpy-style docstring, rendered in the API reference and in `docs_src/report.md`); several attributes existed but were undocumented before (`matches`, `reference_columns`, `new_columns`, `row_counts`, `match_threshold`, `verified_threshold`, `name_only`).
+- New example: [`cdc_atsdr_svi.ipynb`](examples/cdc_atsdr_svi.ipynb), a notebook version of the SVI example with an Open in Colab link, alongside the existing script.
+
 ## 0.3.0
 
 - `read_table` now reads SAS (`.sas7bdat`/`.xpt`, no extra dependency needed) and R data (`.rds`, needs the new `field-match[r]` extra via `pyreadr`; requires Python 3.10+, since `pyreadr` stopped shipping a Python 3.9 wheel as of its 0.5.4 release).

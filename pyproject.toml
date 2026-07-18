@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "field-match"
 dynamic = ["version"]  # single source of truth: __version__ in src/field_match/__init__.py
-description = "Match columns between dataset versions by comparing column names and column contents."
+description = "Build a column crosswalk between dataset versions by matching on column names and column contents."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.9"

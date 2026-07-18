@@ -423,8 +423,11 @@ def match_fields(
         ``assignment="all"``, which by definition reports every candidate
         pair. Set False to force the full comparison for every column.
 
-    Returns matches with ``score >= match_threshold``, sorted by
-    descending score.
+    Returns
+    -------
+    list of FieldMatch
+        Matches with ``score >= match_threshold``, sorted by descending
+        score.
     """
     matches, _ = _match_with_scores(
         data1,

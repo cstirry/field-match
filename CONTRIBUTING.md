@@ -14,6 +14,22 @@ ruff format --check .   # formatting
 CI runs the same checks on Python 3.9 through 3.13, plus a build
 verification (`python -m build && twine check dist/*`).
 
+## Documentation
+
+The docs site (https://field-match.readthedocs.io/) is built with MkDocs
+Material from the Markdown files in `docs_src/` (the `docs/` folder
+serves the web app, so the usual name was taken). Read the Docs
+rebuilds it automatically on every push to `main`, using
+`.readthedocs.yaml`. To preview locally:
+
+```bash
+pip install -r docs_src/requirements.txt
+mkdocs serve
+```
+
+The API reference pulls from the package's docstrings via mkdocstrings,
+so it stays current without manual edits.
+
 ## Web app hosting
 
 The web app in `docs/` is served by GitHub Pages, configured once in the
